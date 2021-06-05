@@ -2,7 +2,7 @@
 #define log_info printf
 
 #define I2S_bck_io_num   27  //BCK
-#define I2S_ws_io_num    0   //LCK  = GPIO0 is also used for Enable "Flashing mode" DO NOT USE WHEN CP2101 SERIAL IS CONNECTED
+#define I2S_ws_io_num    5   //LCK  
 #define I2S_data_out_num 25  //DIN
 
 #define HAVE_BTSTACK_STDIN
