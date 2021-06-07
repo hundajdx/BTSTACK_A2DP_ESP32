@@ -2,10 +2,10 @@
 #define log_info printf
 
 #define I2S_bck_io_num   27  //BCK
-#define I2S_ws_io_num    5   //LCK  
+#define I2S_ws_io_num    0   //LCK  = GPIO0 is also used for Enable "Flashing mode" DO NOT USE WHEN CP2101 SERIAL IS CONNECTED
 #define I2S_data_out_num 25  //DIN
 
-#define HAVE_BTSTACK_STDIN
+///#define HAVE_BTSTACK_STDIN ///enable control from SERIAL CONSOLE...
 
 ///#define L2CAP_USES_CHANNELS ///???
 ///#define CONFIG_BT_ENABLED
@@ -108,7 +108,7 @@
 
 
 
-static const char * device_addr_string = "EC:D0:9F:35:F3:7B";
+extern const char * device_addr_string = "EC:D0:9F:35:F3:7B";
 
 #include "a2dp_sink_demo.c" ///
 
@@ -285,10 +285,11 @@ static void hci_packet_handler____(uint8_t packet_type, uint16_t channel, uint8_
 
 
 void setup() {
-  esp_err_t ret;
-
-     
+  Serial.begin(115200);
+  
+       
   btstack_init(); //init in (btstack_port_esp32.c)   
+  
   l2cap_init();
   sm_init();
 
@@ -315,6 +316,7 @@ void setup() {
 
     // Store stream enpoint's SEP ID, as it is used by A2DP API to indentify the stream endpoint
     a2dp_local_seid = avdtp_local_seid(local_stream_endpoint);
+///NCX: pokus:
 
     // Initialize AVRCP service
     avrcp_init();

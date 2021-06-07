@@ -101,17 +101,27 @@ static int sink_streaming;
 
 
 uint8_t audio_volume=64;
-int16_t Gain(int16_t s) {
-    int32_t v;
-    v= (s * audio_volume)>>6;
-    return (int16_t)(v&0xffff);
-}
+
+extern uint8_t STREAM_PAUSED;
+
+uint32_t STREAM_START_TIMEOUT_COUNTER=0;
 
 static void fill_buffer(void){
     size_t bytes_written;
     uint8_t buffer[DMA_BUFFER_SAMPLES * BYTES_PER_SAMPLE_STEREO];
     (*playback_callback)((int16_t*)buffer, DMA_BUFFER_SAMPLES);
-    i2s_write((i2s_port_t)i2s_num, buffer, DMA_BUFFER_SAMPLES * bytes_per_sample, &bytes_written, portMAX_DELAY);
+    
+    if (STREAM_PAUSED==0) {
+        if (STREAM_START_TIMEOUT_COUNTER+1000<millis()) {       
+           i2s_write((i2s_port_t)i2s_num, buffer, DMA_BUFFER_SAMPLES * bytes_per_sample, &bytes_written, portMAX_DELAY);
+        } else {
+            i2s_zero_dma_buffer((i2s_port_t)i2s_num);          
+        }   
+    } else {
+        if (STREAM_START_TIMEOUT_COUNTER+1000<millis())
+        i2s_zero_dma_buffer((i2s_port_t)i2s_num);
+        STREAM_START_TIMEOUT_COUNTER=millis();
+    }    
 }
 
 static void driver_timer_handler(btstack_timer_source_t * ts){

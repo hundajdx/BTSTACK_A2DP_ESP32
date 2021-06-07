@@ -71,6 +71,9 @@
 #include "btstack/btstack.h"
 #include "btstack/btstack_resample.h"
 
+#include "freertos/FreeRTOS.h"
+#include "driver/i2s.h"
+
 //#define AVRCP_BROWSING_ENABLED
 
 // if volume control not supported by btstack_audio_sink, you can try to disable volume change notification
@@ -162,6 +165,7 @@ static uint8_t companies[] = {
 #ifdef HAVE_BTSTACK_STDIN
 // pts:         
 ///static const char * device_addr_string = "EC:D0:9F:35:F3:7B"; ///connects to this device from Serial
+extern const char * device_addr_string;
 static bd_addr_t device_addr;
 #endif
 
@@ -225,6 +229,7 @@ static void stdin_process(char cmd);
 
 static int a2dp_and_avrcp_setup(void){
     l2cap_init();
+
     // Initialize AVDTP Sink
     a2dp_sink_init();
     a2dp_sink_register_packet_handler(&a2dp_sink_packet_handler);
@@ -318,6 +323,17 @@ static int a2dp_and_avrcp_setup(void){
     return 0;
 }
 /* LISTING_END */
+
+
+
+
+
+
+
+
+
+uint8_t STREAM_PAUSED;
+extern int i2s_num; ///NCX:
 
 static void playback_handler(int16_t * buffer, uint16_t num_audio_frames){
 
@@ -426,20 +442,31 @@ static void media_processing_start(void){
     const btstack_audio_sink_t * audio = btstack_audio_esp32_sink_get_instance();
     if (audio){
         ///audio->start_stream();
+if (audio_stream_started==0) ///NCX:
         btstack_audio_esp32_sink_start_stream(); ///
     }
     audio_stream_started = 1;
+//--------------------------------------------------------------------------------      
+    STREAM_PAUSED=0;
+//--------------------------------------------------------------------------------      
+
 }
+
+
 
 static void media_processing_pause(void){
     if (!media_initialized) return;
     // stop audio playback
-    audio_stream_started = 0;
+///    audio_stream_started = 0;
     ///const btstack_audio_sink_t * audio = btstack_audio_sink_get_instance();
     const btstack_audio_sink_t * audio = btstack_audio_esp32_sink_get_instance();
     if (audio){
         ///audio->stop_stream();
-        btstack_audio_esp32_sink_stop_stream(); /// 
+///        btstack_audio_esp32_sink_stop_stream(); ///
+   
+//--------------------------------------------------------------------------------      
+    STREAM_PAUSED=1; ///NCX: we cannot stop I2S but why?
+//--------------------------------------------------------------------------------      
     }
 }
 
@@ -894,11 +921,19 @@ static void a2dp_sink_packet_handler(uint8_t packet_type, uint16_t channel, uint
         case A2DP_SUBEVENT_STREAM_STARTED:
             printf("A2DP  Sink      : Stream started\n");
             // audio stream is started when buffer reaches minimal level
+//--------------------------------------------------------------------------------
+STREAM_PAUSED=0; ///NCX:
+//--------------------------------------------------------------------------------
+            
             break;
         
         case A2DP_SUBEVENT_STREAM_SUSPENDED:
             printf("A2DP  Sink      : Stream paused\n");
-            media_processing_pause();
+///            media_processing_pause();
+//--------------------------------------------------------------------------------
+STREAM_PAUSED=1; ///NCX:
+//--------------------------------------------------------------------------------
+
             break;
         
         case A2DP_SUBEVENT_STREAM_RELEASED:
